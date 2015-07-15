@@ -184,10 +184,7 @@ public class Main extends JFrame implements NativeKeyListener {
 
 	public void nativeKeyReleased(NativeKeyEvent e) {
 		try {
-			if (NativeKeyEvent.VC_ENTER == e.getKeyCode())
-				logger.append("\n");
-			else
-				logger.append(NativeKeyEvent.getKeyText(e.getKeyCode()));
+			logger.append(KeyCode.decode(e.getKeyCode()));
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}

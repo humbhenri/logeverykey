@@ -11,26 +11,52 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Logger {
 
 	private static final int DEFAULT_MAX_SIZE = 4096;
+
+	private static final int SECONDS_BETWEEN_FLUSH = 60;
+
+	private static final int NUM_THREADS = 1;
+
 	private long maxSize;
+
 	private File logFile;
+
 	private Writer appender;
+
+	private ScheduledExecutorService executor = Executors.newScheduledThreadPool(NUM_THREADS);
 
 	public Logger(File logFile, long maxSize) throws IOException {
 		this.logFile = logFile;
 		initialize();
 		this.maxSize = maxSize;
+		executor.scheduleAtFixedRate(createPeriodicFlush(), 0, SECONDS_BETWEEN_FLUSH, TimeUnit.SECONDS);
 	}
-	
+
 	public Logger(File logFile) throws IOException {
 		this(logFile, DEFAULT_MAX_SIZE);
 	}
 
 	private void initialize() throws IOException {
 		appender = new BufferedWriter(new FileWriter(logFile, true));
+	}
+
+	private Runnable createPeriodicFlush() {
+		return new Runnable() {
+			public void run() {
+				try {
+					flush();
+					System.out.println("auto flush");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		};
 	}
 
 	public File getFile() {
@@ -47,7 +73,7 @@ public class Logger {
 			rollover();
 		}
 	}
-	
+
 	public void close() throws IOException {
 		appender.close();
 	}
@@ -84,20 +110,12 @@ public class Logger {
 
 	private void clearLog() throws IOException {
 		appender.close();
-		Files.write(logFile.toPath(), new byte[]{});
+		Files.write(logFile.toPath(), new byte[] {});
 		initialize();
 	}
 
 	public long getMaxSize() {
 		return maxSize;
-	}
-	
-	public static void main(String[] args) throws IOException {
-		File file = new File("C:\\Users\\pb003295\\AppData\\Local\\Temp\\t.txt");
-		file.createNewFile();
-		Logger logger = new Logger(file, 3);
-		logger.append("teste");
-		logger.close();
 	}
 
 }
